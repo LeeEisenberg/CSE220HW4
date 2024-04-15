@@ -324,12 +324,14 @@ int make_move(ChessGame *game, ChessMove *move, bool is_client, bool validate_mo
 }
 
 int send_command(ChessGame *game, const char *message, int socketfd, bool is_client) {
-    struct ChessMove *move = malloc(sizeof(ChessMove));
+    char *message2 = malloc(strlen(message)+1);
+    strcpy(message2, message);
+    ChessMove *move = malloc(sizeof(ChessMove));
     if (strncmp(message, "/move ", 6)){
         if (parse_move(&message[6], move) != 0){
             return COMMAND_ERROR;
         }
-        if (make_move(&message[6], move, is_client, true) != 0){
+        if (make_move(game, move, is_client, true) != 0){
             return COMMAND_ERROR;
         }
         send(socketfd, message, sizeof(message), 0);
@@ -340,35 +342,35 @@ int send_command(ChessGame *game, const char *message, int socketfd, bool is_cli
     } else if (strncmp(message, "/chessboard ", 12)){
         display_chessboard(game);
         return COMMAND_DISPLAY;
-    } else if (strncmp(message, "/import ", 8)){
+    } else if (strncmp(message, "/import ", 8)){ //what goes in the if statement???
         if (is_client == false){
             fen_to_chessboard(&message[8], game);
-            send(socketfd, message, sizeof(message), 0);
-            return COMMAND_IMPORT;
         }
+        send(socketfd, message, sizeof(message), 0);
+        return COMMAND_IMPORT;
     } else if (strncmp(message, "/load ", 6)){
-        char *token = strtok(message, ' ');
-        token = strtok(NULL, ' ');
+        char *token = strtok(message2, " ");
+        token = strtok(NULL, " ");
         if (token == NULL){
             return COMMAND_ERROR;
         }
-        char *username = malloc(strlen(token));
+        char *username = malloc(strlen(token)+1);
         strcpy(username, token);
-        token = strtok(NULL, ' ');
+        token = strtok(NULL, " ");
         if (token == NULL){
             return COMMAND_ERROR;
         }
-        char *num = malloc(strlen(token));
+        char *num = malloc(strlen(token)+1);
         strcpy(num, token);
-        int n = strtol(num, token, 10);
+        int n = strtol(num, &token, 10);
         if (load_game(game, username, "game_database.txt", n) != 0){
             return COMMAND_ERROR;
         }
         send(socketfd, message, sizeof(message), 0);
         return COMMAND_LOAD;
     } else if (strncmp(message, "/save ", 6)){
-        char *token = strtok(message, ' ');
-        token = strtok(NULL, ' ');
+        char *token = strtok(message2, " ");
+        token = strtok(NULL, " ");
         if (token == NULL){
             return COMMAND_ERROR;
         }
@@ -383,15 +385,59 @@ int send_command(ChessGame *game, const char *message, int socketfd, bool is_cli
     (void)message;
     (void)socketfd;
     (void)is_client;
-    return -999;
+    return -777;
 }
 
 int receive_command(ChessGame *game, const char *message, int socketfd, bool is_client) {
+    char *message2 = malloc(strlen(message)+1);
+    strcpy(message2, message);
+    ChessMove *move = malloc(sizeof(ChessMove));
+    if (strncmp(message, "/move ", 6)){
+        if (parse_move(&message[6], move) != 0){
+            return COMMAND_ERROR;
+        }
+        if (make_move(game, move, is_client, true) != 0){
+            return COMMAND_ERROR;
+        }
+        send(socketfd, message, sizeof(message), 0);
+        return COMMAND_MOVE;
+    } else if (strncmp(message, "/forfeit ", 9)){
+        close(socketfd);
+        return COMMAND_FORFEIT;
+    } else if (strncmp(message, "/import ", 8)){
+        if (is_client == true){
+            fen_to_chessboard(&message[8], game);
+        }
+        send(socketfd, message, sizeof(message), 0);
+        return COMMAND_IMPORT;
+    } else if (strncmp(message, "/load ", 6)){
+        char *token = strtok(message2, " ");
+        token = strtok(NULL, " ");
+        if (token == NULL){
+            return COMMAND_ERROR;
+        }
+        char *username = malloc(strlen(token)+1);
+        strcpy(username, token);
+        token = strtok(NULL, " ");
+        if (token == NULL){
+            return COMMAND_ERROR;
+        }
+        char *num = malloc(strlen(token)+1);
+        strcpy(num, token);
+        int n = strtol(num, &token, 10);
+        if (load_game(game, username, "game_database.txt", n) != 0){
+            return COMMAND_ERROR;
+        }
+        send(socketfd, message, sizeof(message), 0);
+        return COMMAND_LOAD;
+    } else{
+        return -1;
+    }
     (void)game;
     (void)message;
     (void)socketfd;
     (void)is_client;
-    return -999;
+    return -888;
 }
 
 int save_game(ChessGame *game, const char *username, const char *db_filename) {
