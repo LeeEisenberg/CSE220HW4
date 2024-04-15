@@ -279,13 +279,10 @@ int parse_move(const char *move, ChessMove *parsed_move) {
 
 int make_move(ChessGame *game, ChessMove *move, bool is_client, bool validate_move) {//assumes client is always white and goes first
     //display_chessboard(game);
-    printf("startSquare: %s\n", move->startSquare);
-    printf("endSquare: %s\n", move->endSquare);
     int startRow = '8' - move->startSquare[1];
     int startCol = move->startSquare[0] - 'a';
     int endRow = '8' - move->endSquare[1];
     int endCol = move->endSquare[0] - 'a';
-    printf("piece: %c\n", game->chessboard[startRow][startCol]);
     if (validate_move){
         if (is_client == game->moveCount % 2){ //try changing this
             return MOVE_OUT_OF_TURN;
@@ -351,9 +348,11 @@ int send_command(ChessGame *game, const char *message, int socketfd, bool is_cli
     } else if (!strncmp(message, "/import ", 8)){ //what goes in the if statement???
         if (is_client == false){
             fen_to_chessboard(&message[8], game);
+            send(socketfd, message, sizeof(message), 0);
+            return COMMAND_IMPORT;
+        } else{
+            return COMMAND_ERROR;
         }
-        send(socketfd, message, sizeof(message), 0);
-        return COMMAND_IMPORT;
     } else if (!strncmp(message, "/load ", 6)){
         char *token = strtok(message2, " ");
         token = strtok(NULL, " ");
@@ -413,9 +412,11 @@ int receive_command(ChessGame *game, const char *message, int socketfd, bool is_
     } else if (!strncmp(message, "/import ", 8)){
         if (is_client == true){
             fen_to_chessboard(&message[8], game);
+            send(socketfd, message, sizeof(message), 0);
+            return COMMAND_IMPORT;
+        } else{
+            return COMMAND_ERROR;
         }
-        send(socketfd, message, sizeof(message), 0);
-        return COMMAND_IMPORT;
     } else if (!strncmp(message, "/load ", 6)){
         char *token = strtok(message2, " ");
         token = strtok(NULL, " ");

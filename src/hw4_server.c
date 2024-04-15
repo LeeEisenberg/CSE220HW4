@@ -50,7 +50,7 @@ int main() {
     ChessGame game;
     initialize_game(&game);
     size_t l;
-    char *line;
+    char *line = NULL;
     int out;
     while (1) {
         read(connfd, buffer, BUFFER_SIZE);
@@ -67,7 +67,7 @@ int main() {
             break;
         }
     }
-
+    free(line);
     close(listenfd);
-    return 1;
+    exit(1);
 }

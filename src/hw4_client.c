@@ -37,7 +37,7 @@ int main() {
 
     char buffer[BUFFER_SIZE];
     size_t l;
-    char *line;
+    char *line = NULL;
     int out;
     while (1) {
         while (out != COMMAND_ERROR && out != COMMAND_UNKNOWN){
@@ -62,6 +62,7 @@ int main() {
     chessboard_to_fen(fen, &game);
     fprintf(temp, "%s", fen);
     fclose(temp);
+    free(line);
     //close(connfd);
-    return 1;
+    exit(1);
 }
