@@ -221,7 +221,7 @@ void fen_to_chessboard(const char *fen, ChessGame *game) {
                 game->chessboard[i][j] = '.';
                 spaces--;
             } else{
-                if (fen[index] < '9'){ //its a number
+                if (fen[index] < '9' && fen[index] > '0'){ //its a number
                     spaces = fen[index] - '0';
                     game->chessboard[i][j] = '.';
                     spaces--;
@@ -442,7 +442,7 @@ int receive_command(ChessGame *game, const char *message, int socketfd, bool is_
 }
 
 int save_game(ChessGame *game, const char *username, const char *db_filename) {
-    for (int i = 0; i < strlen(username); i++){
+    for (int i = 0; i < (int) strlen(username); i++){
         if (username[i] == ' '){
             return -1;
         }
