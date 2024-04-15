@@ -69,5 +69,5 @@ int main() {
     }
 
     close(listenfd);
-    return 0;
+    return 1;
 }

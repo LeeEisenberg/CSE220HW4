@@ -88,7 +88,7 @@ bool is_valid_pawn_move(char piece, int src_row, int src_col, int dest_row, int 
         if (src_col != dest_col){
             return false;
         }
-        if (game->chessboard[src_row+direction][src_col+direction] != '.' || game->chessboard[src_row+(2*direction)][src_col+(2*direction)] != '.'){
+        if (game->chessboard[src_row+direction][src_col] != '.' || game->chessboard[src_row+(2*direction)][src_col] != '.'){
             return false;
         }
         if (src_row != (direction == 1 ? 1 : 6)){
@@ -108,13 +108,13 @@ bool is_valid_pawn_move(char piece, int src_row, int src_col, int dest_row, int 
 
 bool is_valid_rook_move(int src_row, int src_col, int dest_row, int dest_col, ChessGame *game) {
     if (src_row == dest_row){
-        for (int i = (src_col < dest_col ? src_col+1 : src_col-1); i < dest_col; (src_col < dest_col ? i++ : i--)){
+        for (int i = (src_col < dest_col ? src_col+1 : src_col-1); i != dest_col; (src_col < dest_col ? i++ : i--)){
             if (game->chessboard[src_row][i] != '.'){
                 return false;
             }
         }
     } else if (src_col == dest_col){
-        for (int i = (src_row < dest_row ? src_row+1 : src_row-1); i < dest_row; (src_row < dest_row ? i++ : i--)){
+        for (int i = (src_row < dest_row ? src_row+1 : src_row-1); i != dest_row; (src_row < dest_row ? i++ : i--)){
             if (game->chessboard[i][src_col] != '.'){
                 return false;
             }
@@ -200,7 +200,7 @@ bool is_valid_move(char piece, int src_row, int src_col, int dest_row, int dest_
         case 'k':
             return is_valid_king_move(src_row, src_col, dest_row, dest_col);
         default:
-            return NULL;
+            return false;
     }
     (void)piece;
     (void)src_row;
@@ -208,7 +208,7 @@ bool is_valid_move(char piece, int src_row, int src_col, int dest_row, int dest_
     (void)dest_row;
     (void)dest_col;
     (void)game;
-    return NULL;
+    return false;
 }
 
 void fen_to_chessboard(const char *fen, ChessGame *game) {
@@ -278,21 +278,25 @@ int parse_move(const char *move, ChessMove *parsed_move) {
 }
 
 int make_move(ChessGame *game, ChessMove *move, bool is_client, bool validate_move) {//assumes client is always white and goes first
-    int startRow = 8 - move->startSquare[1];
+    //display_chessboard(game);
+    printf("startSquare: %s\n", move->startSquare);
+    printf("endSquare: %s\n", move->endSquare);
+    int startRow = '8' - move->startSquare[1];
     int startCol = move->startSquare[0] - 'a';
-    int endRow = 8 - move->endSquare[1];
+    int endRow = '8' - move->endSquare[1];
     int endCol = move->endSquare[0] - 'a';
+    printf("piece: %c\n", game->chessboard[startRow][startCol]);
     if (validate_move){
-        if (is_client != !game->moveCount % 2){ //try changing this
+        if (is_client == game->moveCount % 2){ //try changing this
             return MOVE_OUT_OF_TURN;
         }
         if (game->chessboard[startRow][startCol] == '.'){
             return MOVE_NOTHING;
         }
-        if ((is_client && game->chessboard[startRow][startCol] > 'Z') || (!is_client && game->chessboard[startRow][startCol] < 'a')){
+        if ((!is_client && game->chessboard[startRow][startCol] < 'Z' && game->chessboard[startRow][startCol] > 'A') || (is_client && game->chessboard[startRow][startCol] > 'a' && game->chessboard[startRow][startCol] < 'z')){
             return MOVE_WRONG_COLOR;
         }
-        if (game->chessboard[endRow][endCol] != '.' && ((!is_client && game->chessboard[endRow][endCol] > 'Z') || (is_client && game->chessboard[endRow][endCol] < 'a'))){
+        if ((is_client && game->chessboard[endRow][endCol] < 'Z' && game->chessboard[endRow][endCol] > 'A') || (!is_client && game->chessboard[endRow][endCol] > 'a' && game->chessboard[endRow][endCol] < 'z')){
             return MOVE_SUS;
         }
         if (game->chessboard[startRow][startCol] != 'p' && game->chessboard[startRow][startCol] != 'P' && strlen(move->endSquare) == 3){
@@ -311,7 +315,7 @@ int make_move(ChessGame *game, ChessMove *move, bool is_client, bool validate_mo
     }
     game->chessboard[endRow][endCol] = game->chessboard[startRow][startCol];
     game->chessboard[startRow][startCol] = '.';
-    if ((is_client && endRow == 0) || (!is_client && endRow == 7)){ //promote
+    if ((is_client && endRow == 0 && game->chessboard[endRow][endCol] == 'P') || (!is_client && endRow == 7 && game->chessboard[endRow][endCol] == 'p')){ //promote
         game->chessboard[endRow][endCol] += (move->endSquare[2] - 'p');
     }
     game->moves[game->moveCount] = *move;
@@ -337,11 +341,11 @@ int send_command(ChessGame *game, const char *message, int socketfd, bool is_cli
         }
         send(socketfd, message, sizeof(message), 0);
         return COMMAND_MOVE;
-    } else if (!strncmp(message, "/forfeit ", 9)){
+    } else if (!strncmp(message, "/forfeit", 8)){
         send(socketfd, message, sizeof(message), 0);
         close(socketfd);
         return COMMAND_FORFEIT;
-    } else if (!strncmp(message, "/chessboard ", 12)){
+    } else if (!strncmp(message, "/chessboard", 11)){
         display_chessboard(game);
         return COMMAND_DISPLAY;
     } else if (!strncmp(message, "/import ", 8)){ //what goes in the if statement???
@@ -398,12 +402,12 @@ int receive_command(ChessGame *game, const char *message, int socketfd, bool is_
         if (parse_move(&message[6], move) != 0){
             return COMMAND_ERROR;
         }
-        if (make_move(game, move, is_client, true) != 0){
+        if (make_move(game, move, is_client, false) != 0){
             return COMMAND_ERROR;
         }
         send(socketfd, message, sizeof(message), 0);
         return COMMAND_MOVE;
-    } else if (!strncmp(message, "/forfeit ", 9)){
+    } else if (!strncmp(message, "/forfeit", 8)){
         close(socketfd);
         return COMMAND_FORFEIT;
     } else if (!strncmp(message, "/import ", 8)){
@@ -460,15 +464,15 @@ int save_game(ChessGame *game, const char *username, const char *db_filename) {
 }
 
 int load_game(ChessGame *game, const char *username, const char *db_filename, int save_number) {
-    if (save_number > 1){
+    if (save_number < 1){
         return -1;
     }
-    FILE *input = fopen(db_filename, "w");
+    FILE *input = fopen(db_filename, "r");
     if (input == NULL){
         return -1;
     }
-    size_t l;
-    char *line;
+    size_t l = 0;
+    char *line = NULL;
     int read = getline(&line, &l, input);
     while (read != -1){
         if (strncmp(line, username, strlen(username)) == 0){

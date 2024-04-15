@@ -63,5 +63,5 @@ int main() {
     fprintf(temp, "%s", fen);
     fclose(temp);
     //close(connfd);
-    return 0;
+    return 1;
 }
