@@ -1,19 +1,41 @@
 #include "hw4.h"
 
 void initialize_game(ChessGame *game) {
-    game = malloc(sizeof(ChessGame));
-    strcpy(game->chessboard[0], "rnbqkbnr");
-    strcpy(game->chessboard[1], "pppppppp");
-    strcpy(game->chessboard[2], "........");
-    strcpy(game->chessboard[3], "........");
-    strcpy(game->chessboard[4], "........");
-    strcpy(game->chessboard[5], "........");
-    strcpy(game->chessboard[6], "PPPPPPPP");
-    strcpy(game->chessboard[7], "RNBQKBNR");
+    // game = malloc(sizeof(ChessGame));
+    // strcpy(game->chessboard[0], "rnbqkbnr");
+    // strcpy(game->chessboard[1], "pppppppp");
+    // strcpy(game->chessboard[2], "........");
+    // strcpy(game->chessboard[3], "........");
+    // strcpy(game->chessboard[4], "........");
+    // strcpy(game->chessboard[5], "........");
+    // strcpy(game->chessboard[6], "PPPPPPPP");
+    // strcpy(game->chessboard[7], "RNBQKBNR");
+    game->chessboard[0][0] = 'r';
+    game->chessboard[0][1] = 'n';
+    game->chessboard[0][2] = 'b';
+    game->chessboard[0][3] = 'q';
+    game->chessboard[0][4] = 'k';
+    game->chessboard[0][5] = 'b';
+    game->chessboard[0][6] = 'n';
+    game->chessboard[0][7] = 'r';
+    game->chessboard[7][0] = 'R';
+    game->chessboard[7][1] = 'N';
+    game->chessboard[7][2] = 'B';
+    game->chessboard[7][3] = 'Q';
+    game->chessboard[7][4] = 'K';
+    game->chessboard[7][5] = 'B';
+    game->chessboard[7][6] = 'N';
+    game->chessboard[7][7] = 'R';
+    for (int i = 0; i < 8; i++){
+        game->chessboard[1][i] = 'p';
+        game->chessboard[6][i] = 'P';
+        for (int j = 2; j < 6; j++){
+            game->chessboard[j][i] = '.';
+        }
+    }
     game->moveCount = 0;
     game->capturedCount = 0;
     game->currentPlayer = WHITE_PLAYER;
-    return game;
 }
 
 void chessboard_to_fen(char fen[], ChessGame *game) {
@@ -255,19 +277,15 @@ int parse_move(const char *move, ChessMove *parsed_move) {
 }
 
 int make_move(ChessGame *game, ChessMove *move, bool is_client, bool validate_move) {//assumes client is always white and goes first
-    int startRow;
-    int startCol;
-    int endRow;
-    int endCol;
+    int startRow = 8 - move->startSquare[1];
+    int startCol = move->startSquare[0] - 'a';
+    int endRow = 8 - move->endSquare[1];
+    int endCol = move->endSquare[0] - 'a';
     if (validate_move){
-        startRow = 8 - move->startSquare[1];
-        startCol = move->startSquare[0] - 'a';
-        endRow = 8 - move->endSquare[1];
-        endCol = move->endSquare[0] - 'a';
         if (is_client != !game->moveCount % 2){ //try changing this
             return MOVE_OUT_OF_TURN;
         }
-        if (game->chessboard[startRow][startCol] = '.'){
+        if (game->chessboard[startRow][startCol] == '.'){
             return MOVE_NOTHING;
         }
         if ((is_client && game->chessboard[startRow][startCol] > 'Z') || (!is_client && game->chessboard[startRow][startCol] < 'a')){
@@ -325,7 +343,7 @@ int save_game(ChessGame *game, const char *username, const char *db_filename) {
     FILE *output = fopen(db_filename, "a");
     char fen[70];
     chessboard_to_fen(fen, game);
-    fprintf("%s:%s\n", username, fen);
+    fprintf(output, "%s:%s\n", username, fen);
     fclose(output);
     (void)game;
     (void)username;
