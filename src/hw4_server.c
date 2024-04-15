@@ -46,8 +46,26 @@ int main() {
 
     INFO("Server accepted connection");
 
+    char buffer[BUFFER_SIZE];
+    ChessGame game;
+    initialize_game(&game);
+    size_t l;
+    char *line;
+    int out;
     while (1) {
-        // Fill this in
+        read(connfd, buffer, BUFFER_SIZE);
+        out = receive_command(&game, buffer, connfd, false);
+        if (out == COMMAND_FORFEIT){
+            break;
+        }
+        while (out != COMMAND_ERROR && out != COMMAND_UNKNOWN){
+            printf("Enter command: ");
+            out = getline(&line, &l, stdin);
+            out = send_command(&game, line, connfd, false);
+        }
+        if (out == COMMAND_FORFEIT){
+            break;
+        }
     }
 
     close(listenfd);

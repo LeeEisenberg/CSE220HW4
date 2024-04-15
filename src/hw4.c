@@ -257,7 +257,7 @@ int parse_move(const char *move, ChessMove *parsed_move) {
     if (strlen(move) == 5 && move[3] != '1' && move[3] != '8'){
         return PARSE_MOVE_INVALID_DESTINATION;
     }
-    if (strlen(move) == 5 && move[5] != 'q' && move[5] != 'r' && move[5] != 'b' && move[5] != 'n'){
+    if (strlen(move) == 5 && move[4] != 'q' && move[4] != 'r' && move[4] != 'b' && move[4] != 'n'){
         return PARSE_MOVE_INVALID_PROMOTION;
     }
     parsed_move->startSquare[0] = move[0];
@@ -327,7 +327,7 @@ int send_command(ChessGame *game, const char *message, int socketfd, bool is_cli
     char *message2 = malloc(strlen(message)+1);
     strcpy(message2, message);
     ChessMove *move = malloc(sizeof(ChessMove));
-    if (strncmp(message, "/move ", 6)){
+    if (!strncmp(message, "/move ", 6)){
         if (parse_move(&message[6], move) != 0){
             return COMMAND_ERROR;
         }
@@ -336,19 +336,20 @@ int send_command(ChessGame *game, const char *message, int socketfd, bool is_cli
         }
         send(socketfd, message, sizeof(message), 0);
         return COMMAND_MOVE;
-    } else if (strncmp(message, "/forfeit ", 9)){
+    } else if (!strncmp(message, "/forfeit ", 9)){
         send(socketfd, message, sizeof(message), 0);
+        close(socketfd);
         return COMMAND_FORFEIT;
-    } else if (strncmp(message, "/chessboard ", 12)){
+    } else if (!strncmp(message, "/chessboard ", 12)){
         display_chessboard(game);
         return COMMAND_DISPLAY;
-    } else if (strncmp(message, "/import ", 8)){ //what goes in the if statement???
+    } else if (!strncmp(message, "/import ", 8)){ //what goes in the if statement???
         if (is_client == false){
             fen_to_chessboard(&message[8], game);
         }
         send(socketfd, message, sizeof(message), 0);
         return COMMAND_IMPORT;
-    } else if (strncmp(message, "/load ", 6)){
+    } else if (!strncmp(message, "/load ", 6)){
         char *token = strtok(message2, " ");
         token = strtok(NULL, " ");
         if (token == NULL){
@@ -368,7 +369,7 @@ int send_command(ChessGame *game, const char *message, int socketfd, bool is_cli
         }
         send(socketfd, message, sizeof(message), 0);
         return COMMAND_LOAD;
-    } else if (strncmp(message, "/save ", 6)){
+    } else if (!strncmp(message, "/save ", 6)){
         char *token = strtok(message2, " ");
         token = strtok(NULL, " ");
         if (token == NULL){
@@ -392,7 +393,7 @@ int receive_command(ChessGame *game, const char *message, int socketfd, bool is_
     char *message2 = malloc(strlen(message)+1);
     strcpy(message2, message);
     ChessMove *move = malloc(sizeof(ChessMove));
-    if (strncmp(message, "/move ", 6)){
+    if (!strncmp(message, "/move ", 6)){
         if (parse_move(&message[6], move) != 0){
             return COMMAND_ERROR;
         }
@@ -401,16 +402,16 @@ int receive_command(ChessGame *game, const char *message, int socketfd, bool is_
         }
         send(socketfd, message, sizeof(message), 0);
         return COMMAND_MOVE;
-    } else if (strncmp(message, "/forfeit ", 9)){
+    } else if (!strncmp(message, "/forfeit ", 9)){
         close(socketfd);
         return COMMAND_FORFEIT;
-    } else if (strncmp(message, "/import ", 8)){
+    } else if (!strncmp(message, "/import ", 8)){
         if (is_client == true){
             fen_to_chessboard(&message[8], game);
         }
         send(socketfd, message, sizeof(message), 0);
         return COMMAND_IMPORT;
-    } else if (strncmp(message, "/load ", 6)){
+    } else if (!strncmp(message, "/load ", 6)){
         char *token = strtok(message2, " ");
         token = strtok(NULL, " ");
         if (token == NULL){
@@ -441,8 +442,13 @@ int receive_command(ChessGame *game, const char *message, int socketfd, bool is_
 }
 
 int save_game(ChessGame *game, const char *username, const char *db_filename) {
+    for (int i = 0; i < strlen(username); i++){
+        if (username[i] == ' '){
+            return -1;
+        }
+    }
     FILE *output = fopen(db_filename, "a");
-    char fen[70];
+    char fen[100];
     chessboard_to_fen(fen, game);
     fprintf(output, "%s:%s\n", username, fen);
     fclose(output);

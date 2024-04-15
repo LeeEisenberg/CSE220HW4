@@ -35,8 +35,24 @@ int main() {
     initialize_game(&game);
     display_chessboard(&game);
 
+    char buffer[BUFFER_SIZE];
+    size_t l;
+    char *line;
+    int out;
     while (1) {
-        // Fill this in
+        while (out != COMMAND_ERROR && out != COMMAND_UNKNOWN){
+            printf("Enter command: ");
+            out = getline(&line, &l, stdin);
+            out = send_command(&game, line, connfd, true);
+        }
+        if (out == COMMAND_FORFEIT){
+            break;
+        }
+        read(connfd, buffer, BUFFER_SIZE);
+        out = receive_command(&game, buffer, connfd, true);
+        if (out == COMMAND_FORFEIT){
+            break;
+        }
     }
 
     // Please ensure that the following lines of code execute just before your program terminates.
@@ -46,6 +62,6 @@ int main() {
     chessboard_to_fen(fen, &game);
     fprintf(temp, "%s", fen);
     fclose(temp);
-    close(connfd);
+    //close(connfd);
     return 0;
 }
