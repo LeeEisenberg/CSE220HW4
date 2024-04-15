@@ -65,7 +65,7 @@ void chessboard_to_fen(char fen[], ChessGame *game) {
     }
     fen[index-1] = ' ';
     fen[index] = (game->currentPlayer == WHITE_PLAYER ? 'w' : 'b');
-    fen[index+1] = '\n';
+    fen[index+1] = '\0';
     (void)fen;
     (void)game;
 }
