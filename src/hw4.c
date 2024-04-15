@@ -1,7 +1,6 @@
 #include "hw4.h"
 
 void initialize_game(ChessGame *game) {
-    game = malloc(sizeof(ChessGame));
     // strcpy(game->chessboard[0], "rnbqkbnr");
     // strcpy(game->chessboard[1], "pppppppp");
     // strcpy(game->chessboard[2], "........");
@@ -89,7 +88,7 @@ bool is_valid_pawn_move(char piece, int src_row, int src_col, int dest_row, int 
         if (src_col != dest_col){
             return false;
         }
-        if (game->chessboard[src_row+1][src_col+1] != '.' || game->chessboard[src_row+2][src_col+2] != '.'){
+        if (game->chessboard[src_row+direction][src_col+direction] != '.' || game->chessboard[src_row+(2*direction)][src_col+(2*direction)] != '.'){
             return false;
         }
         if (src_row != (direction == 1 ? 1 : 6)){
@@ -109,13 +108,13 @@ bool is_valid_pawn_move(char piece, int src_row, int src_col, int dest_row, int 
 
 bool is_valid_rook_move(int src_row, int src_col, int dest_row, int dest_col, ChessGame *game) {
     if (src_row == dest_row){
-        for (int i = src_col+1; i < dest_col; (src_col < dest_col ? i++ : i--)){
+        for (int i = (src_col < dest_col ? src_col+1 : src_col-1); i < dest_col; (src_col < dest_col ? i++ : i--)){
             if (game->chessboard[src_row][i] != '.'){
                 return false;
             }
         }
     } else if (src_col == dest_col){
-        for (int i = src_row+1; i < dest_row; (src_row < dest_row ? i++ : i--)){
+        for (int i = (src_row < dest_row ? src_row+1 : src_row-1); i < dest_row; (src_row < dest_row ? i++ : i--)){
             if (game->chessboard[i][src_col] != '.'){
                 return false;
             }
@@ -235,6 +234,8 @@ void fen_to_chessboard(const char *fen, ChessGame *game) {
         }
         index++;
     }
+    game->moveCount = 0;
+    game->capturedCount = 0;
     if (fen[index] == 'w'){
         game->currentPlayer = WHITE_PLAYER;
     } else{
