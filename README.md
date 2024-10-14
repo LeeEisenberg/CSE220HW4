@@ -1,4 +1,4 @@
-# CSE 320: Systems Level Programming Assignment 5
+# CSE 320: Systems Level Programming Assignment 4
 
 ## Overview
 Chess program written in C that allows one player to start a server on their computer that another player can connect to as a client, and then play a game with the other player.
